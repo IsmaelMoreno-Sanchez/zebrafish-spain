@@ -3,135 +3,164 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Spanish Zebrafish Network Map</title>
+    <title>Spanish Zebrafish Research Map</title>
+    
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
     <style>
-        :root { --primary: #2c3e50; --accent: #3498db; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; background: #f0f2f5; }
-        header { background: var(--primary); color: white; padding: 1rem 2rem; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        #map { height: 75vh; width: 100%; border-bottom: 4px solid var(--accent); }
-        .container { padding: 20px; max-width: 1200px; margin: auto; }
-        
-        /* Popup Styling */
-        .leaflet-popup-content-wrapper { border-radius: 8px; padding: 5px; width: 320px; }
-        .group-card { border-bottom: 1px solid #eee; padding: 10px 0; }
-        .group-card:last-child { border-bottom: none; }
-        .group-name { color: var(--accent); font-weight: bold; font-size: 1.1em; margin: 0; }
-        .inst { font-size: 0.85em; color: #666; font-style: italic; }
-        .contact { font-size: 0.9em; margin: 5px 0; }
-        .btn-box { margin-top: 8px; display: flex; gap: 5px; }
-        
-        button { 
-            background: #eef; border: 1px solid #ccd; padding: 4px 8px; cursor: pointer; 
-            font-size: 0.8em; border-radius: 4px; transition: 0.2s;
+        :root {
+            --primary: #2c3e50;
+            --accent: #3498db;
         }
-        button:hover { background: var(--accent); color: white; }
+        body { margin: 0; font-family: 'Segoe UI', Tahoma, Geneva, sans-serif; background: #f4f7f6; }
+        header { 
+            background: var(--primary); color: white; padding: 15px; 
+            text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+        #map { height: calc(100vh - 80px); width: 100%; }
+
+        /* Scrollable Popup Styling */
+        .leaflet-popup-content-wrapper { border-radius: 12px; padding: 0; overflow: hidden; }
+        .leaflet-popup-content { margin: 0; width: 350px !important; }
         
-        .hidden-info { display: none; background: #f9f9f9; padding: 8px; margin-top: 5px; font-size: 0.85em; border-radius: 4px; border-left: 3px solid var(--accent); max-height: 150px; overflow-y: auto; }
+        .popup-header {
+            background: var(--accent); color: white; padding: 10px;
+            font-weight: bold; text-align: center; font-size: 1.1rem;
+        }
         
-        footer { text-align: center; padding: 20px; color: #777; font-size: 0.8em; }
+        .scroll-container {
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .group-entry {
+            border-bottom: 1px solid #eee;
+            padding: 15px 0;
+        }
+        .group-entry:last-child { border-bottom: none; }
+        
+        .lab-name { color: var(--accent); font-weight: bold; font-size: 1rem; display: block; margin-bottom: 3px; }
+        .inst-name { font-size: 0.85rem; color: #666; font-style: italic; display: block; margin-bottom: 8px; }
+        .pi-info { font-size: 0.9rem; margin-bottom: 5px; }
+        .pi-info b { color: #333; }
+        
+        .details-btn {
+            background: #f1f1f1; border: 1px solid #ddd; padding: 4px 8px;
+            font-size: 0.75rem; border-radius: 4px; cursor: pointer; margin-top: 5px;
+        }
+        .details-content {
+            display: none; font-size: 0.85rem; color: #555; background: #fafafa;
+            padding: 8px; margin-top: 5px; border-radius: 4px; border-left: 3px solid var(--accent);
+        }
+
+        .links-row { margin-top: 8px; }
+        .links-row a { 
+            font-size: 0.8rem; background: var(--accent); color: white; 
+            padding: 3px 8px; text-decoration: none; border-radius: 3px; margin-right: 5px;
+        }
+
+        /* Custom Zebrafish Icon Style */
+        .zebra-icon svg { filter: drop-shadow(0 2px 2px rgba(0,0,0,0.3)); }
     </style>
 </head>
 <body>
 
 <header>
     <h1>Spanish Zebrafish Research Network</h1>
-    <p>Interactive Directory of CSIC and University Research Groups</p>
 </header>
 
 <div id="map"></div>
 
-<div class="container">
-    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
-        <h3>How to use the map</h3>
-        <p>Click on the blue markers to see the research groups located in that city. Inside each popup, you can find the principal investigator, their email, and buttons to toggle a brief description of their work or recent publications.</p>
-    </div>
-</div>
-
-<footer>&copy; 2024 Spanish Zebrafish Community Data</footer>
-
+<!-- Leaflet JS -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
-    const map = L.map('map').setView([40.4168, -3.7038], 6);
 
-    L.tileLayer('https://{s}.tile.thunderforest.com/atlas/{z}/{x}/{y}.png?apikey=6170aad102364233903115ef129599c1', {
-        attribution: '&copy; OpenStreetMap contributors'
+<script>
+    // 1. Initialize Map centered in Spain
+    const map = L.map('map').setView([40.2, -3.7], 6);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap'
     }).addTo(map);
 
-    // Data processed from Excel
-    const data = [
-        { city: "Murcia", lat: 37.9922, lng: -1.1307, groups: [
-            { name: "Inmunidad, Inflamación y Cáncer", inst: "Universidad de Murcia", contact: "Victoriano Mulero", email: "vmulero@um.es", web: "https://www.um.es/nisoft/victor1.htm", desc: "Inflammatory, infectious and blood diseases, with special focus on rare diseases.", pubs: "Cell Death Discov 2024, EMBO Mol Med 2023, Sci Adv 2022." }
-        ]},
-        { city: "Barcelona", lat: 41.3851, lng: 2.1734, groups: [
-            { name: "Neurobiology of Sensory Systems", inst: "Universitat Pompeu Fabra", contact: "Berta Alsina", email: "berta.alsina@upf.edu", web: "https://www.upf.edu/web/alsina_lab", desc: "Understanding the development of the inner ear at early morphogenesis and neuron development.", pubs: "Development 2024, Dev Dyn 2023." },
-            { name: "Neurodevelopmental Dynamics", inst: "UPF", contact: "Cristina Pujades", email: "cristina.pujades@upf.edu", web: "https://pujadeslab.upf.edu/", desc: "Understanding how neuronal circuits are assembled within the hindbrain.", pubs: "Development 2024, Cell Reports 2022." },
-            { name: "Zebrafish hair cell toxicity", inst: "Universitat de Barcelona", contact: "Alejandro Barrallo Gimeno", email: "abarrallo@ub.edu", web: "#", desc: "Mechanisms of hair cell death after exposure to antibiotics.", pubs: "PMID: 39031529, PMID: 36582469." },
-            { name: "Neurogenetics", inst: "University of Barcelona", contact: "Bru Cormand", email: "bcormand@gmail.com", web: "https://www.ub.edu/ibub/", desc: "Molecular and evolutionary mechanisms underlying major psychiatric conditions.", pubs: "Transl Psychiatry 2024, Mol Psychiatry 2022." },
-            { name: "Trivedi Lab", inst: "EMBL Barcelona", contact: "Vikas Trivedi", email: "trivedi@embl.es", web: "https://www.embl.org/groups/trivedi/", desc: "Impact of environmental challenges on robust tissue development.", pubs: "Ongoing multicellular self-organization studies." },
-            { name: "Regeneration Research", inst: "University of Barcelona", contact: "Carmen de Sena Tomás", email: "cdesena@ub.edu", web: "#", desc: "How innate immune cells shape regeneration of the CNS.", pubs: "Nature Comm 2025, BBI 2024." },
-            { name: "Repro-Immune Team (RIT)", inst: "ICM-CSIC", contact: "Laia Ribas", email: "lribas@icm.csic.es", web: "https://ribasreproimmuneteam.wordpress.com/", desc: "Interactions between the reproductive and immune systems.", pubs: "Genomics 2024, IJMS 2023." },
-            { name: "Marine Epigenome Dynamics", inst: "ICM-CSIC", contact: "Noelia Díaz", email: "ndiaz@icm.csic.es", web: "https://www.icm.csic.es/en", desc: "How environment regulates biological processes through epigenetics.", pubs: "Nature Genetics 2022, Genome Research 2021." }
-        ]},
-        { city: "Seville", lat: 37.3891, lng: -5.9845, groups: [
-            { name: "Genetic control of Morphogenesis", inst: "CABD (CSIC/UPO)", contact: "Juan R. Martinez-Morales", email: "jrmarmor@upo.es", web: "http://www.cabd.es", desc: "Developmental genetics focusing on early eye development and mechanical forces.", pubs: "Elife 2023, Nat Commun 2023." },
-            { name: "Epigenomics of Dev and Disease", inst: "IBiS / Univ. Sevilla", contact: "José María Santos Pereira", email: "jsantos2@us.es", web: "https://departamento.us.es/dbiocel/", desc: "Chromosome conformation capture and transcriptomics in human genetic diseases.", pubs: "PMIDs: 38321954, 34518536." },
-            { name: "Mechapattern Lab", inst: "CABD", contact: "Maria Almuedo Castillo", email: "malmuedocastillo@gmail.com", web: "#", desc: "Mechanosensitive gene regulation and mechanobiology of early development.", pubs: "Yap-dependent mechanoregulatory program 2023." },
-            { name: "Mitobiology", inst: "CABD/UPO", contact: "Gloria Brea Calvo", email: "gbrecal@upo.es", web: "https://mitobiology.org/", desc: "Modelling mitochondrial rare diseases and developmental metabolism.", pubs: "Mitochondrial respiration studies." },
-            { name: "Moreno-Mateos Lab", inst: "CABD", contact: "Miguel A Moreno-Mateos", email: "mamormat@upo.es", web: "https://www.cabd.es/", desc: "CRISPR-Cas optimizations and Maternal to zygotic transition.", pubs: "EMBO J 2025, Nature Comm 2025." },
-            { name: "Developmental Epigenomics", inst: "CABD / CSIC", contact: "Ozren Bogdanovic", email: "o.bogdanovic@gmail.com", web: "http://www.bogdanoviclab.org", desc: "Gene regulation, epigenomics, DNA methylation and evodevo.", pubs: "Nature Genetics 2022, Nucleic Acids Res 2023." }
-        ]},
-        { city: "Lugo", lat: 43.0125, lng: -7.5558, groups: [
-            { name: "Barreiro-Iglesias Lab", inst: "ARCUS, USC", contact: "Antón Barreiro", email: "anton.barreiro@usc.es", web: "https://arcus.usc.gal/es", desc: "Investigation of spontaneous neuronal regeneration after traumatic spinal cord injury.", pubs: "BBA Bioenerg 2024, Cell Prolif 2024." },
-            { name: "ZebraBiores", inst: "USC", contact: "Laura Sánchez", email: "lauraelena.sanchez@usc.es", web: "https://www.zebrabiores.com/", desc: "Studies in cancer, rare diseases and toxicity.", pubs: "Advanced Science 2025, IJMS 2025." }
-        ]},
-        { city: "Vigo", lat: 42.2406, lng: -8.7207, groups: [
-            { name: "Immunology and Genomics", inst: "IIM-CSIC", contact: "Antonio Figueras", email: "antoniofigueras@iim.csic.es", web: "https://iim.csic.es", desc: "Host-pathogen interaction and inflammation.", pubs: "Dev Comp Immunol 2025, Biology 2024." },
-            { name: "Aquatic biotechnology Lab", inst: "IIM-CSIC", contact: "Pep Rotllant", email: "rotllant@iim.csic.es", web: "http://acuabiotec.csic.es", desc: "Genetic mechanisms shaping animal form, pigmentation, and welfare.", pubs: "J Neurosci 2024, J Pineal Res 2024." },
-            { name: "Inmunología y Genómica", inst: "IIM-CSIC", contact: "Beatriz Novoa", email: "beatriznovoa@iim.csic.es", web: "https://www.iim.csic.es", desc: "Innate immune system and toxicity of nanoplastics.", pubs: "Aging Cell 2019, Dev Comp Immunol 2025." }
-        ]},
-        { city: "Castellón", lat: 40.05, lng: 0.0, groups: [
-            { name: "FISH NEUROBEHAVIOUR LAB", inst: "IATS-CSIC", contact: "José Miguel Cerdá", email: "jm.cerda-reverter@csic.es", web: "#", desc: "Neural mechanisms in the integration of internal information in fish behaviour.", pubs: "J Neurosci 2024, Int J Mol Sci 2023." }
-        ]},
-        { city: "A Coruña", lat: 43.3623, lng: -8.4115, groups: [
-            { name: "Neurover", inst: "UDC", contact: "Mónica Folgueira", email: "m.folgueira@udc.es", web: "https://cica.udc.gal/group/neurover/", desc: "Organization and development of the central nervous system.", pubs: "IJMS 2024, 2023." }
-        ]},
-        { city: "Madrid", lat: 40.4168, lng: -3.7038, groups: [
-            { name: "Morfogénesis CNS", inst: "CBM (CSIC-UAM)", contact: "Paola Bovolenta", email: "pbovolenta@cbm.csic.es", web: "#", desc: "Brain development, aging and neurodegeneration.", pubs: "eLife 2021, Nat Commun 2021." }
-        ]},
-        { city: "Alicante", lat: 38.3452, lng: -0.4810, groups: [
-            { name: "Cell plasticity", inst: "Instituto de Neurociencias", contact: "Angela Nieto", email: "anieto@umh.es", web: "https://in.umh-csic.es/", desc: "Cancer cell movements and cell plasticity in organ development.", pubs: "Nature 2020, Nature Comm 2025." }
-        ]}
+    // 2. Data from your file
+    const labs = [
+        { city: "Murcia", lat: 37.9922, lng: -1.1307, group: "Inmunidad, Inflamación y Cáncer", inst: "Universidad de Murcia", pi: "Victoriano Mulero", email: "vmulero@um.es", web: "https://www.um.es/nisoft/victor1.htm", desc: "Focus on rare diseases, inflammatory and infectious diseases.", pubs: "Cell Death Discov 2024, EMBO Mol Med 2023." },
+        { city: "Barcelona", lat: 41.3851, lng: 2.1734, group: "Neurobiology of Sensory Systems", inst: "UPF", pi: "Berta Alsina", email: "berta.alsina@upf.edu", web: "https://www.upf.edu/web/alsina_lab", desc: "Inner ear development and neuron behavior.", pubs: "Development 2024, Dev Dyn 2023." },
+        { city: "Barcelona", lat: 41.3851, lng: 2.1734, group: "Neurodevelopmental Dynamics", inst: "UPF", pi: "Cristina Pujades", email: "cristina.pujades@upf.edu", web: "https://pujadeslab.upf.edu/", desc: "Neuronal circuit assembly in the hindbrain.", pubs: "Development 2024, Cell Reports 2022." },
+        { city: "Sevilla", lat: 37.3326, lng: -5.9392, group: "Genetic control of Morphogenesis", inst: "CABD (CSIC/UPO)", pi: "Juan R. Martinez-Morales", email: "jrmarmor@upo.es", web: "http://www.cabd.es", desc: "Early eye development and mechanical forces.", pubs: "Elife 2023, Nat Commun 2023." },
+        { city: "Lugo", lat: 43.0125, lng: -7.5558, group: "Barreiro-Iglesias Lab", inst: "ARCUS-USC", pi: "Antón Barreiro", email: "anton.barreiro@usc.es", web: "https://arcus.usc.gal/es", desc: "Spontaneous neuronal regeneration after spinal cord injury.", pubs: "BBA Bioenerg 2024." },
+        { city: "Sevilla", lat: 37.3326, lng: -5.9392, group: "Epigenomics of development", inst: "IBiS / Univ. Sevilla", pi: "José María Santos Pereira", email: "jsantos2@us.es", web: "https://departamento.us.es/dbiocel/", desc: "Chromosome conformation and human genetic diseases.", pubs: "PMID: 38321954." },
+        { city: "Castellón", lat: 40.05, lng: 0.0, group: "FISH NEUROBEHAVIOUR LAB", inst: "IATS-CSIC", pi: "José Miguel Cerdá", email: "jm.cerda-reverter@csic.es", web: "#", desc: "Neural mechanisms of fish behaviour.", pubs: "J Neurosci 2024." },
+        { city: "A Coruña", lat: 43.3623, lng: -8.4115, group: "Neurover", inst: "UDC", pi: "Mónica Folgueira", email: "m.folgueira@udc.es", web: "https://cica.udc.gal/group/neurover/", desc: "CNS organization and development.", pubs: "IJMS 2024." },
+        { city: "Madrid", lat: 40.4168, lng: -3.7038, group: "Morfogénesis y neurodegeneración", inst: "CBM (CSIC-UAM)", pi: "Paola Bovolenta", email: "pbovolenta@cbm.csic.es", web: "#", desc: "Brain assembly and sight disabilities.", pubs: "eLife 2021." },
+        { city: "Alicante", lat: 38.3452, lng: -0.4810, group: "Cell Plasticity", inst: "Inst. Neurociencias (CSIC-UMH)", pi: "Angela Nieto", email: "anieto@umh.es", web: "https://in.umh-csic.es/", desc: "Cancer cell movements and organ development.", pubs: "Nature 2020." },
+        { city: "Vigo", lat: 42.2406, lng: -8.7207, group: "Immunology and Genomics", inst: "IIM-CSIC", pi: "Antonio Figueras", email: "antoniofigueras@iim.csic.es", web: "https://iim.csic.es", desc: "Host-pathogen interaction and inflammation.", pubs: "Dev Comp Immunol 2025." },
+        { city: "Sevilla", lat: 37.3326, lng: -5.9392, group: "Moreno-Mateos Lab", inst: "CABD", pi: "Miguel A Moreno-Mateos", email: "mamormat@upo.es", web: "https://www.cabd.es/", desc: "CRISPR-Cas optimizations.", pubs: "Nature Comm 2025." },
+        { city: "Barcelona", lat: 41.3851, lng: 2.1734, group: "Repro-Immune Team", inst: "ICM-CSIC", pi: "Laia Ribas", email: "lribas@icm.csic.es", web: "https://ribasreproimmuneteam.wordpress.com/", desc: "Reproductive and immune systems.", pubs: "Genomics 2024." },
+        { city: "Barcelona", lat: 41.3851, lng: 2.1734, group: "Trivedi Lab", inst: "EMBL Barcelona", pi: "Vikas Trivedi", email: "trivedi@embl.es", web: "https://www.embl.org", desc: "Multicellular self-organization.", pubs: "Ongoing studies." }
     ];
 
-    // Function to toggle display
-    window.toggleInfo = (id) => {
+    // 3. Group data by city
+    const grouped = labs.reduce((acc, lab) => {
+        if (!acc[lab.city]) acc[lab.city] = { coords: [lab.lat, lab.lng], labs: [] };
+        acc[lab.city].labs.push(lab);
+        return acc;
+    }, {});
+
+    // 4. Create Zebrafish SVG Icon
+    const zebrafishSVG = `
+    <svg width="40" height="20" viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg">
+        <path d="M10,25 Q30,5 60,15 Q80,10 90,5 L85,25 L90,45 Q80,40 60,35 Q30,45 10,25" fill="#3498db" stroke="#2c3e50" stroke-width="2"/>
+        <circle cx="25" cy="20" r="3" fill="white"/>
+        <path d="M30,17 L60,22 M32,25 L62,30 M35,33 L65,38" stroke="white" stroke-width="2" opacity="0.6"/>
+    </svg>`;
+
+    const zebraIcon = L.divIcon({
+        className: 'zebra-icon',
+        html: zebrafishSVG,
+        iconSize: [40, 20],
+        iconAnchor: [20, 10]
+    });
+
+    // 5. Toggle Function
+    window.toggleMore = (id) => {
         const el = document.getElementById(id);
         el.style.display = el.style.display === 'block' ? 'none' : 'block';
     };
 
-    // Add markers
-    data.forEach((loc, i) => {
-        let content = `<div style="max-height: 400px; overflow-y: auto;"><h3>Groups in ${loc.city}</h3>`;
-        loc.groups.forEach((g, j) => {
-            const gid = `info-${i}-${j}`;
-            const pid = `pub-${i}-${j}`;
-            content += `
-                <div class="group-card">
-                    <p class="group-name">${g.name}</p>
-                    <p class="inst">${g.inst}</p>
-                    <p class="contact">👤 ${g.contact} | <a href="mailto:${g.email}">Email</a> | <a href="${g.web}" target="_blank">Web</a></p>
-                    <div class="btn-box">
-                        <button onclick="toggleInfo('${gid}')">Description</button>
-                        <button onclick="toggleInfo('${pid}')">Publications</button>
+    // 6. Add markers to map
+    for (const city in grouped) {
+        const data = grouped[city];
+        
+        let popupHtml = `<div class="popup-header">${city}</div><div class="scroll-container">`;
+        
+        data.labs.forEach((l, i) => {
+            const uniqueId = `details-${city.replace(/\s/g, '')}-${i}`;
+            popupHtml += `
+                <div class="group-entry">
+                    <span class="lab-name">${l.group}</span>
+                    <span class="inst-name">${l.inst}</span>
+                    <div class="pi-info"><b>Contact:</b> ${l.pi}</div>
+                    <div class="links-row">
+                        <a href="mailto:${l.email}">Email</a>
+                        ${l.web !== '#' ? `<a href="${l.web}" target="_blank">Website</a>` : ''}
                     </div>
-                    <div id="${gid}" class="hidden-info"><b>Bio:</b> ${g.desc}</div>
-                    <div id="${pid}" class="hidden-info"><b>Pubs:</b> ${g.pubs}</div>
-                </div>`;
+                    <button class="details-btn" onclick="toggleMore('${uniqueId}')">View Interests & Pubs</button>
+                    <div id="${uniqueId}" class="details-content">
+                        <b>Interests:</b> ${l.desc}<br><br>
+                        <b>Recent Pubs:</b> ${l.pubs}
+                    </div>
+                </div>
+            `;
         });
-        content += `</div>`;
-        L.marker([loc.lat, loc.lng]).addTo(map).bindPopup(content);
-    });
+        popupHtml += `</div>`;
+
+        L.marker(data.coords, { icon: zebraIcon })
+            .addTo(map)
+            .bindPopup(popupHtml);
+    }
 </script>
 
 </body>
